@@ -5,15 +5,17 @@
 
 :local InternalNodes {"10.0.0.10"; "10.0.0.11"; "10.0.0.12"; "10.0.0.13"}
 :local SafeExternal {"9.9.9.9"; "45.90.28.242"; "76.76.19.19"}
+:local TestName "www.example.com"
 :local TargetIP ""
 :local CurrentDNS [/ip dns get servers]
 
-# 1. Check Internal Nodes sequentially
+# 1. Check Internal Nodes sequentially with a real DNS query (not ping)
 :foreach IP in=$InternalNodes do={
     :if ([:len $TargetIP] = 0) do={
-        :if ([/ping $IP count=2] > 0) do={ 
-            :set TargetIP $IP 
-        }
+        :do {
+            :local r [:resolve $TestName server=$IP]
+            :set TargetIP $IP
+        } on-error={}
     }
 }
 
@@ -21,9 +23,10 @@
 :if ([:len $TargetIP] = 0) do={
     :foreach IP in=$SafeExternal do={
         :if ([:len $TargetIP] = 0) do={
-            :if ([/ping $IP count=2] > 0) do={ 
-                :set TargetIP $IP 
-            }
+            :do {
+                :local r [:resolve $TestName server=$IP]
+                :set TargetIP $IP
+            } on-error={}
         }
     }
 }
